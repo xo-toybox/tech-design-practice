@@ -1,45 +1,47 @@
 # {Chatbot} System Architecture Analysis
 
+## Summary: Key Tradeoffs
+
+| Tradeoff | Choice | Consequence |
+|----------|--------|-------------|
+| | | |
+
+**Critical Issues**: [Any data loss, security, or reliability concerns]
+
+---
+
 ## Architecture Overview
 
 ```
-<!-- ASCII diagram or description of the full stack -->
+<!-- ASCII diagram of the full stack -->
 ```
 
 ---
 
-## Edge Layer
+## Edge & Gateway Layer
 
-### CDN Provider
-- Provider:
-- Evidence:
-
-### Caching Strategy
-- Cache behavior (DYNAMIC / HIT / MISS patterns):
-- Cache-Control directives:
-- What's cached vs bypassed:
-
-### Edge Processing
-- Compression at edge:
-- Security features (WAF, DDoS):
-
----
-
-## Gateway Layer
+### CDN
+| Aspect | Configuration |
+|--------|---------------|
+| Provider | |
+| Evidence | |
+| Cache behavior | |
+| Compression | |
 
 ### Load Balancer
-- Provider:
-- Evidence:
-- L4 vs L7:
+| Aspect | Configuration |
+|--------|---------------|
+| Provider | |
+| Evidence | |
+| Type | L4 / L7 |
 
-### API Gateway
-- Rate limiting indicators:
-- Request routing:
-- Authentication handling:
+### Network Infrastructure Unknowns
 
-### TLS Termination
-- Where TLS terminates:
-- Certificate details (if visible):
+| Topic | Status | Evidence | Open Questions |
+|-------|--------|----------|----------------|
+| Rate Limiting | | | |
+| Circuit Breakers | | | |
+| Session Affinity | | | |
 
 ---
 
@@ -48,12 +50,12 @@
 ### Service Mesh
 - Provider:
 - Evidence:
-- Observed latency overhead:
+- Latency overhead:
 
 ### API Patterns
-- REST / GraphQL / gRPC:
-- Versioning strategy:
-- Pagination patterns:
+- Style: REST / GraphQL / gRPC
+- Versioning:
+- Pagination:
 
 ### Microservices (Discovered)
 
@@ -61,49 +63,47 @@
 |---------|-----------|---------|-----------------|
 | | | | |
 
-### Inter-service Communication
-- Sync vs async patterns:
-- Message queues (if detected):
+### Extension Architecture
+
+| System | Endpoint | Payload Size | Response Type |
+|--------|----------|--------------|---------------|
+| | | | |
 
 ---
 
 ## Data Layer
 
-### Storage Systems
+### Storage Architecture
 
-#### Primary Database (Inferred)
-- Type (SQL / NoSQL / NewSQL):
-- Evidence (latency patterns, API shapes):
-- Estimated data model:
+```
+<!-- ASCII diagram of storage systems -->
+```
 
-#### Caching Layer
-- Redis / Memcached indicators:
-- Cache patterns (read-through, write-behind):
-- TTL observations:
+### Primary Database (Inferred)
 
-#### Object Storage
-- File/artifact storage:
-- CDN integration:
+| Entity | Key Fields | Storage Pattern |
+|--------|------------|-----------------|
+| | | |
+
+### File Storage
+
+| System | Endpoint | Scope | Purpose |
+|--------|----------|-------|---------|
+| | | | |
+
+### Caching Layer
+- Indicators:
+- Patterns:
 
 ### Consistency Model
 
-#### Read Consistency
-- Strong vs eventual:
-- Evidence from behavior:
+*See [consistency-analysis.md](consistency-analysis.md) for detailed analysis.*
 
-#### Write Consistency
-- Sync vs async writes:
-- Conflict resolution (if observable):
-
-### Durability
-
-#### Write Acknowledgment
-- Immediate vs deferred:
-- Evidence from response timing:
-
-#### Replication (Inferred)
-- Multi-region indicators:
-- Failover patterns:
+| Aspect | Behavior |
+|--------|----------|
+| Read consistency | |
+| Replication lag | |
+| Write conflict resolution | |
 
 ### Data Partitioning
 - Sharding indicators:
@@ -111,48 +111,38 @@
 
 ---
 
-## Tradeoffs Analysis
+## Observability & Third-party Services
 
-### Throughput vs Latency
-- Observed latency ranges:
-- Batching patterns:
-- Streaming optimizations:
+### Distributed Tracing
+- Provider:
+- Evidence:
+- Trace correlation:
 
-### Availability Patterns
-- Error handling observed:
-- Retry behavior:
-- Graceful degradation:
-- Health check endpoints:
+### Product Analytics
+- Provider:
+- Endpoint:
 
-### Consistency vs Availability (CAP)
-- Which side do they lean?
-- Evidence from behavior under load:
-- Eventual consistency windows (if observable):
+### Feature Flags
+- Provider:
+- Endpoint:
 
-### Cost vs Performance
-- Resource optimization signals:
-- Compression choices:
-- Caching aggressiveness:
+### External Service Dependencies
 
----
-
-## Third-party Integrations
-
-| Service | Domain | Purpose | Integration Type |
-|---------|--------|---------|------------------|
-| | | | |
+| Service | Domain | Purpose |
+|---------|--------|---------|
+| | | |
 
 ---
 
 ## Security Observations
 
 ### Authentication
-- Auth mechanisms:
+- Mechanisms:
 - Token patterns:
 
 ### Authorization
 - RBAC / ABAC indicators:
-- Org/project scoping:
+- Scoping:
 
 ### Data Protection
 - Encryption in transit:
@@ -164,30 +154,28 @@
 
 ### Latency Breakdown
 
-| Operation | Typical Latency | Notes |
-|-----------|----------------|-------|
-| Page load | | |
+| Operation | Typical Latency | Bound By |
+|-----------|-----------------|----------|
 | Metadata fetch | | |
+| CRUD operations | | |
 | Completion (TTFB) | | |
 | Completion (total) | | |
+| Page load | | |
 
-### Resource Usage
-- Request count on load:
-- Payload sizes:
-- Connection reuse:
+### Operational Patterns
+
+| Pattern | Observation |
+|---------|-------------|
+| Parallel requests | |
+| Streaming | |
+| Connection reuse | |
+| Compression | |
 
 ---
 
-## Freeform Observations
+## Related Documents
 
-<!--
-Anything not covered above:
-- Unknowns to investigate
-- Architectural questions
-- Anomalies or surprises
-- Comparison with expected patterns
-- Areas for deeper analysis
-- Potential bottlenecks
-- Scalability considerations
-- Things that don't fit neatly into categories
--->
+- **[communication-patterns.md](communication-patterns.md)** - REST, SSE, Push patterns
+- **[consistency-analysis.md](consistency-analysis.md)** - Consistency deep dive
+- **[product-analysis.md](product-analysis.md)** - Extensions, features, ecosystem
+- **[frontend-overview.md](frontend-overview.md)** - Client-side architecture

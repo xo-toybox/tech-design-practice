@@ -1,92 +1,71 @@
-# Chatbot Protocol & Architecture Analysis Framework
+# Chatbot Protocol & Architecture Analysis
 
-Reusable framework for analyzing chatbot streaming protocols and system architectures.
+Analysis of chatbot streaming protocols and system architectures via client-side observation.
 
-## Analysis Tracks
+## claude.ai Analysis
 
-### Track 1: Streaming Protocol Deep Dive
-- HTTP versions: 1.1 / 2 / 3 (QUIC)
-- Streaming mechanisms: SSE / WebSocket / gRPC-Web
-- Connection lifecycle, multiplexing, compression
+### Documents
 
-### Track 2: System Architecture Analysis
-- Edge/Gateway/Service/Data layers
-- Consistency, storage, durability tradeoffs
-- Third-party integrations
+| Document | Scope |
+|----------|-------|
+| [system-architecture.md](analysis/claude-ai/system-architecture.md) | Infrastructure, services, data layer, tradeoffs |
+| [communication-api.md](analysis/claude-ai/communication-api.md) | REST vs SSE vs FCM patterns, user state lifecycle |
+| [communication-api-rest.md](analysis/claude-ai/communication-api-rest.md) | REST endpoints, latency profiles, schemas |
+| [deep-dive-consistency.md](analysis/claude-ai/deep-dive-consistency.md) | Eventual consistency, LWW data loss scenario |
+| [frontend-overview.md](analysis/claude-ai/frontend-overview.md) | Next.js, third-party services, feature flags |
+| [product-analysis.md](analysis/claude-ai/product-analysis.md) | Extensions ecosystem, skills, connectors |
+| [future-explorations.md](analysis/claude-ai/future-explorations.md) | Test plans for future deep dives |
 
-## Directory Structure
+### Key Findings
 
-```
-.data/{chatbot}/           # Raw capture data (NDJSON)
-  raw-capture.ndjson
-  CAPTURE.md               # Capture methodology
+| Finding | Detail |
+|---------|--------|
+| **Infrastructure** | Cloudflare CDN → Google Cloud LB → Envoy mesh, HTTP/3 (86%) |
+| **Streaming** | SSE via POST+fetch (not EventSource), 6 event types |
+| **Consistency** | Eventually consistent (~2s lag), LWW causes data loss on re-submit |
+| **Extensions** | 3 systems: DXT (190KB manifests), Skills (5KB), MCP (SSE bootstrap) |
+| **Observability** | Honeycomb tracing, Segment analytics, Statsig flags |
+| **Push** | FCM for long-running tasks (Research, tool calls, Claude Code) |
 
-analysis/{chatbot}/        # Analysis documents
-  streaming-protocol.md    # Track 1
-  system-architecture.md   # Track 2
-  samples/                 # Supporting evidence
+### Tradeoffs Observed
 
-scripts/
-  capture-requests.js      # Main capture script
-  configs/{chatbot}.js     # Per-chatbot config
+| Tradeoff | Choice |
+|----------|--------|
+| No idempotency layer | Data loss when user re-submits during stale window |
+| Full extension manifests | 190KB on every page load |
+| Eventually consistent reads | Simpler backend, but stale reads possible |
+| No API versioning | Risk of breaking changes |
 
-templates/                 # Reusable templates
-  streaming-protocol.md
-  system-architecture.md
-```
+---
 
-## Capture Tiers
+## Framework
 
-| Tier | Scope | Data Captured |
-|------|-------|---------------|
-| 1 | API endpoints | Full: headers, body, timing, SSE events |
-| 2 | Known domains | Metadata: domain, path, status, timing |
-| 3 | Discovery | Minimal: domain, status, timing (find unknowns) |
-
-## Quick Start
-
-### 1. Capture Data
+### Capture Methodology
 
 ```javascript
-// In DevTools Console on target chatbot:
+// In DevTools Console:
 // 1. Paste config: scripts/configs/claude-ai.js
 // 2. Paste script: scripts/capture-requests.js
-// 3. Refresh page
-// 4. Interact (send message)
-// 5. Export:
-downloadCaptures()
+// 3. Interact and export: downloadCaptures()
 ```
 
-### 2. Analyze
+### Directory Structure
 
-```bash
-# Count requests
-wc -l .data/claude-ai/raw-capture.ndjson
-
-# List unique endpoints
-jq -r '.req.url' .data/claude-ai/raw-capture.ndjson | \
-  sed 's/[a-f0-9-]\{36\}/{uuid}/g' | sort -u
-
-# Find SSE streams
-jq -r 'select(.res.sse == true) | .req.url' .data/claude-ai/raw-capture.ndjson
-
-# Discover unknown domains (tier 3)
-jq -r 'select(.tier == 3) | .req.domain' .data/claude-ai/raw-capture.ndjson | sort | uniq -c
+```
+analysis/{chatbot}/     # Analysis documents
+.data/{chatbot}/        # Raw capture data (NDJSON)
+scripts/configs/        # Per-chatbot capture configs
 ```
 
-### 3. Document
+## Future Work
 
-Use templates to structure analysis:
-- `templates/streaming-protocol.md` - Protocol deep dive
-- `templates/system-architecture.md` - Architecture analysis
+- Cross-app analysis comparing Claude.ai vs ChatGPT architectures
+- Deep dive into streaming protocol differences
+- Analyze additional chatbots (Gemini, Copilot, etc.)
 
-## Adding a New Chatbot
+## Notes
 
-1. Create config: `scripts/configs/{name}.js`
-2. Create directories: `.data/{name}/`, `analysis/{name}/samples/`
-3. Copy templates to `analysis/{name}/`
-4. Capture and analyze
-
-## Current Analyses
-
-- **claude-ai**: Claude.ai (Anthropic) - SSE over HTTP/3, Cloudflare + Google Cloud + Envoy
+- PII: remove personal info
+- **Live account constraint**: Be conservative with server requests when capturing
+- Frontend docs should be visual/diagrammatic for quick reference
+- Backend/architecture docs are priority for deep dives
