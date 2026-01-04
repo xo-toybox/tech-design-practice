@@ -1,71 +1,120 @@
-# Chatbot Protocol & Architecture Analysis
+# AI Chatbot Architecture Analysis
 
-Analysis of chatbot streaming protocols and system architectures via client-side observation.
+Analysis of ChatGPT and Claude.ai architectures via client-side observation.
 
-## claude.ai Analysis
-
-### Documents
-
-| Document | Scope |
-|----------|-------|
-| [system-architecture.md](analysis/claude-ai/system-architecture.md) | Infrastructure, services, data layer, tradeoffs |
-| [communication-api.md](analysis/claude-ai/communication-api.md) | REST vs SSE vs FCM patterns, user state lifecycle |
-| [communication-api-rest.md](analysis/claude-ai/communication-api-rest.md) | REST endpoints, latency profiles, schemas |
-| [deep-dive-consistency.md](analysis/claude-ai/deep-dive-consistency.md) | Eventual consistency, LWW data loss scenario |
-| [frontend-overview.md](analysis/claude-ai/frontend-overview.md) | Next.js, third-party services, feature flags |
-| [product-analysis.md](analysis/claude-ai/product-analysis.md) | Extensions ecosystem, skills, connectors |
-| [future-explorations.md](analysis/claude-ai/future-explorations.md) | Test plans for future deep dives |
-
-### Key Findings
-
-| Finding | Detail |
-|---------|--------|
-| **Infrastructure** | Cloudflare CDN → Google Cloud LB → Envoy mesh, HTTP/3 (86%) |
-| **Streaming** | SSE via POST+fetch (not EventSource), 6 event types |
-| **Consistency** | Eventually consistent (~2s lag), LWW causes data loss on re-submit |
-| **Extensions** | 3 systems: DXT (190KB manifests), Skills (5KB), MCP (SSE bootstrap) |
-| **Observability** | Honeycomb tracing, Segment analytics, Statsig flags |
-| **Push** | FCM for long-running tasks (Research, tool calls, Claude Code) |
-
-### Tradeoffs Observed
-
-| Tradeoff | Choice |
-|----------|--------|
-| No idempotency layer | Data loss when user re-submits during stale window |
-| Full extension manifests | 190KB on every page load |
-| Eventually consistent reads | Simpler backend, but stale reads possible |
-| No API versioning | Risk of breaking changes |
+**Methodology**: Chrome DevTools network captures, no source code access.
 
 ---
 
-## Framework
+## Key Insights
 
-### Capture Methodology
+### 1. Claude.ai Stale Read Hazard (Critical)
 
-```javascript
-// In DevTools Console:
-// 1. Paste config: scripts/configs/claude-ai.js
-// 2. Paste script: scripts/capture-requests.js
-// 3. Interact and export: downloadCaptures()
-```
-
-### Directory Structure
+Claude.ai exhibits a **read-your-writes consistency violation** during ~2s replication window:
 
 ```
-analysis/{chatbot}/     # Analysis documents
-.data/{chatbot}/        # Raw capture data (NDJSON)
-scripts/configs/        # Per-chatbot capture configs
+Submit message → Persists on primary → Replication lag (~2s)
+                                              ↓
+                              Refresh during window → Stale read
+                                              ↓
+                              Re-submit → Overwrites original
 ```
 
-## Future Work
+**Impact**: User-triggered data loss. Not a durability failure - data IS persisted, but clients may read stale replicas.
 
-- Cross-app analysis comparing Claude.ai vs ChatGPT architectures
-- Deep dive into streaming protocol differences
-- Analyze additional chatbots (Gemini, Copilot, etc.)
+### 2. Extended Thinking Latency (10x Overhead)
 
-## Notes
+| Platform | Model | Simple Prompt |
+|----------|-------|---------------|
+| ChatGPT | GPT-4o 5.2 Thinking | ~5s |
+| Claude.ai | Opus 4.5 (extended) | 50+s |
 
-- PII: remove personal info
-- **Live account constraint**: Be conservative with server requests when capturing
-- Frontend docs should be visual/diagrammatic for quick reference
-- Backend/architecture docs are priority for deep dives
+**Root cause**: Extended thinking applies to all prompts, including trivial ones.
+
+### 3. No Real-Time Multi-Tab Sync (Both Platforms)
+
+| Aspect | ChatGPT | Claude.ai |
+|--------|---------|-----------|
+| **Mechanism** | WebSocket (`celsius`) | Firebase Cloud Messaging |
+| **Type** | Persistent bidirectional | Push-based |
+| **Multi-tab sync** | None (refresh required) | None (refresh required) |
+
+**Key finding**: Neither platform syncs conversation content across tabs in real-time. WebSocket/FCM appear to be used for notifications, not conversation state.
+
+### 4. Anti-Abuse Patterns
+
+| Aspect | ChatGPT | Claude.ai |
+|--------|---------|-----------|
+| **Pre-validation** | Sentinel prepare/finalize | None observed |
+| **Overhead** | ~100-200ms | 0ms |
+| **Recovery** | `/stream_status` polling | `/completion_status` polling |
+
+### 5. Memory Architecture
+
+| Aspect | ChatGPT | Claude.ai |
+|--------|---------|-----------|
+| **Extraction** | Real-time during chat | Nightly batch regeneration |
+| **Structure** | Flat list | 3 sections (Work/Personal/Top-of-mind) |
+| **Update latency** | Immediate | ~24 hours |
+
+### 6. Agent Architecture Divergence
+
+| Aspect | ChatGPT | Claude.ai |
+|--------|---------|-----------|
+| **Approach** | Explicit modes (Deep Research, Canvas, Codex) | Capabilities-based (Settings toggles) |
+| **Custom agents** | GPTs (marketplace) | Skills (Preview) |
+| **Scheduled tasks** | Tasks feature | None observed |
+| **Browser automation** | Computer Use (API) | Claude in Chrome (Max plan) |
+
+**Key finding**: ChatGPT has modular agent architecture with explicit mode selection. Claude.ai integrates capabilities without explicit "agent mode" toggle.
+
+---
+
+## Summary Comparison
+
+| Aspect | ChatGPT | Claude.ai |
+|--------|---------|-----------|
+| **Consistency** | Unknown (likely similar) | Eventually consistent (~2s) |
+| **Extensions** | OAuth connectors (cloud) | MCP (local + OAuth sync) |
+| **Protocol** | Proprietary | MCP (open standard) |
+| **Default latency** | ~5s | 50+s (extended thinking) |
+
+---
+
+## Directory Structure
+
+```
+analysis/
+├── chatgpt/              # ChatGPT-specific analysis
+│   ├── features/         # Feature deep-dives
+│   ├── insights/         # Architectural patterns
+│   └── backlog/          # Future explorations
+│
+├── claude-ai/            # Claude.ai-specific analysis
+│   ├── features/         # Feature deep-dives
+│   ├── insights/         # Architectural patterns
+│   └── backlog/          # Future explorations
+│
+└── comparison/           # Cross-platform comparison
+    ├── PLAN.md           # Planning & tracking
+    ├── README.md         # Document index
+    └── *.md              # Comparison docs (12 total)
+```
+
+---
+
+## Comparison Documents
+
+See [analysis/comparison/README.md](analysis/comparison/README.md) for full document list.
+
+**Completed (12)**:
+architecture, streaming, durability, error-handling, agent-execution, extensions, memories, gpts-projects, realtime-sync, performance, security, agent-modes
+
+---
+
+## Methodology
+
+- Chrome DevTools network captures
+- Direct browser interaction
+- No source code access (client-observable only)
+- Evidence-based claims with network capture citations
