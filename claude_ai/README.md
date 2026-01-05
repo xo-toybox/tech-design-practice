@@ -26,7 +26,7 @@ Submit message → Persists on primary → Replication lag (~2s)
 
 | Platform | Model | Simple Prompt |
 |----------|-------|---------------|
-| ChatGPT | GPT-4o 5.2 Thinking | ~5s |
+| ChatGPT | GPT-5.2 Thinking | ~5s |
 | Claude.ai | Opus 4.5 (extended) | 50+s |
 
 **Root cause**: Extended thinking applies to all prompts, including trivial ones.
