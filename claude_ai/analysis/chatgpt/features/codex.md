@@ -41,7 +41,7 @@ Autonomous coding agent with sandboxed execution.
 │  │                       ▼                                       │  │
 │  │  ┌──────────────────────────────────────────────────────┐   │  │
 │  │  │              TERMINAL (WebSocket)                     │   │  │
-│  │  │  wss://.../wham/sandbox/{id}/terminal                │   │  │
+│  │  │  wss://.../backend-api/wham/sandbox/{id}/terminal   │   │  │
 │  │  └──────────────────────────────────────────────────────┘   │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 │                                                                      │
@@ -61,11 +61,11 @@ Autonomous coding agent with sandboxed execution.
 
 ## Task Lifecycle
 
-1. **Create task**: POST /wham/tasks
-2. **Create environment**: POST /wham/tasks/{id}/environment
-3. **Send messages**: POST /wham/tasks/{id}/turns
+1. **Create task**: POST /backend-api/wham/tasks
+2. **Create environment**: POST /backend-api/wham/tasks/{id}/environment
+3. **Send messages**: POST /backend-api/wham/tasks/{id}/turns
 4. **Agent executes**: Runs commands in sandbox
-5. **View results**: GET /wham/tasks/{id}/turns
+5. **View results**: GET /backend-api/wham/tasks/{id}/turns
 
 ---
 
@@ -76,13 +76,13 @@ Autonomous coding agent with sandboxed execution.
 Pre-built environments for different languages/frameworks.
 
 ```
-GET /wham/sandbox/templates
+GET /backend-api/wham/sandbox/templates
 ```
 
 ### Command Execution
 
 ```
-POST /wham/sandbox/{id}/exec
+POST /backend-api/wham/sandbox/{id}/exec
 ```
 
 Execute shell commands in sandbox.
@@ -91,15 +91,15 @@ Execute shell commands in sandbox.
 
 | Endpoint | Purpose |
 |----------|---------|
-| GET /wham/sandbox/{id}/files | List files |
-| PUT /wham/sandbox/{id}/files | Upload file |
+| GET /backend-api/wham/sandbox/{id}/files | List files |
+| PUT /backend-api/wham/sandbox/{id}/files | Upload file |
 
 ### Terminal
 
 WebSocket connection for real-time shell:
 
 ```
-wss://.../wham/sandbox/{id}/terminal
+wss://.../backend-api/wham/sandbox/{id}/terminal
 ```
 
 ---
@@ -113,7 +113,7 @@ UUID format (e.g., `019b8680-3afb-731f-88ab-13fba59cab9c`)
 ## Sandbox Status
 
 ```
-GET /wham/sandbox/{id}/status
+GET /backend-api/wham/sandbox/{id}/status
 ```
 
 Returns:
